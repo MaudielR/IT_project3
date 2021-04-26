@@ -6,9 +6,9 @@ import socket
 parser = argparse.ArgumentParser(description="""This is a very basic client program""")
 parser.add_argument('-f', type=str, help='This is the source file for the strings to reverse', default='PROJ3-HNS.txt',action='store', dest='in_file')
 parser.add_argument('-o', type=str, help='This is the destination file for the reversed strings', default='RESOLVED.txt',action='store', dest='out_file')
-parser.add_argument('server_location', type=str, help='This is the domain name or ip address of the server',action='store')
-parser.add_argument('rsport', type=int, help='This is the port to connect to the server on',action='store')
-parser.add_argument('tsport', type=int, help='This is the port to connect to the server on',action='store')
+#parser.add_argument('server_location', type=str, help='This is the domain name or ip address of the server',action='store')
+parser.add_argument('lsHostName', type=str, help='This is the port to connect to the server on',action='store')
+parser.add_argument('lsListenPort', type=int, help='This is the port to connect to the server on',action='store')
 
 args = parser.parse_args(argv[1:])
 
@@ -20,7 +20,7 @@ except socket.error as err:
     print('socket open error: {} \n'.format(err))
     exit()
 
-server_addr = (args.server_location, args.rsport)
+server_addr = (args.lsHostName, args.lsListenPort)
 client_sock.connect(server_addr)
 
 #now we need to open both files
@@ -38,3 +38,4 @@ with open(args.out_file, 'w') as write_file:
 
 #close the socket (note this will be visible to the other side)
 client_sock.close()
+
