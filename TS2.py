@@ -23,7 +23,7 @@ except socket.error as err:
 
 #connect to google DNS server
 cloudflare_addr = ('1.1.1.1', 80)
-cloudflare_addr.connect(cloudflare_addr)
+cloudflare_sock.connect(cloudflare_addr)
 
 
 #try and create socket to connect to client
