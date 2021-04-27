@@ -125,4 +125,3 @@ while True:
 #disconnect from client and google DNS
 server_sock.close()
 exit()
-
