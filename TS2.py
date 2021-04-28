@@ -5,6 +5,7 @@ import binascii
 import socket
 from sys import argv
 import struct
+import time
 
 #temp host holder
 Host = ''
@@ -17,6 +18,7 @@ port= args.port
 #try and create socket to connect to google DNS server
 try:
     cloudflare_sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+    print('SOCK connected')
 except socket.error as err:
     print('socket open error: {} \n'.format(err))
     exit()
@@ -25,6 +27,7 @@ except socket.error as err:
 cloudflare_addr = ('1.1.1.1', 80)
 cloudflare_sock.connect(cloudflare_addr)
 
+print('CONNECTED')
 
 #try and create socket to connect to client
 try:
@@ -36,7 +39,7 @@ except socket.err as err:
 server_sock.bind(('',port))
 server_sock.listen(1)
 newSock, serverAddress = server_sock.accept()
-
+print('BOUND')
 
 #decode the message and then send as UDP packet to google DNS server
 def message_generator(url):
@@ -84,24 +87,41 @@ def send_message(message):
     #send send answer back to client (if multiple separate by ',') if none send 'OTHER'
     newSock.sendall(message.encode('utf-8'))
     pass
+#https://www.geeksforgeeks.org/implementation-of-hashing-with-chaining-in-python/
+def table_check(Name):
+    Name =Name.lower()
+    if Name in ts2Table:
+        value = ts2Table[Name]
+        print('value was checked and sent back')
+        send_message((value))
+        server_sock.close()
+    else:
+        pass
 
+ts2Table = {}
 
+#first while the client and google is connected
 while True:
+    time.sleep(10)
+
     #retrieve the message (host name) from client
     client_message = newSock.recv(256).decode('utf-8')
     if(len(client_message) == 0):
         break
 
+    Name =client_message
+    table_check(Name)
     dnsMessage = message_generator(client_message)
-
+    print('dns message',dnsMessage)
     #from https://routley.io/posts/hand-writing-dns-messages/
-    google_sock.sendto(binascii.unhexlify(dnsMessage), google_addr)
-
+    cloudflare_sock.sendto(binascii.unhexlify(dnsMessage), cloudflare_addr)
+    print('HERE')
     #then retrieve the answer from google DNS server and decode
     #from https://routley.io/posts/hand-writing-dns-messages/
-    udpOnlineData, addr = google_sock.recvfrom(4096)
-
+    udpOnlineData, addr = cloudflare_sock.recvfrom(4096)
+    print('CLOUDFLARE RECEIVED', udpOnlineData)
     respond = binascii.hexlify(udpOnlineData).decode('utf-8')
+
     print('responce',respond)
 
     length = len(dnsMessage)
@@ -120,9 +140,9 @@ while True:
         send_message(message)
     else:
         message = newans(respond)
+        ts2Table[str(Name)]= str(message)
         send_message((message))
 
 #disconnect from client and google DNS
 server_sock.close()
 exit()
-
