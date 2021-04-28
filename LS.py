@@ -63,14 +63,12 @@ ts2Table = []
 
 # while the server is listening it checks then decodes messages
 while True:
-    ts1ServerSock.settimeout(5.0)
     # Get host name from client
     request = clientSock.recv(512)
     clientRequestedName = request.decode('utf-8').lower()
-    #TA Abraham lecture
+    # TA Abraham lecture
 
-    newmessege =hashlib.sha224(clientRequestedName.encode('utf-8')).digest()[0]
-    print(newmessege, newmessege)
+    newmessege = hashlib.sha224(clientRequestedName.encode('utf-8')).digest()[0]
     # if client stops sending then stop trying to send anything
     if not request:
         break
@@ -80,20 +78,71 @@ while True:
 
         # If the request has gone to ts1 in the past, send it there again...
         if newmessege % 2 == 0:
-            ts1ServerSock.sendall(request)
-            answer = ts1ServerSock.recv(512)  # might need more depending on size
-            clientSock.sendall(answer)
+            try:
+                print('sending to ts1')
+                ts1ServerSock.sendall(request)
+                answer = ts1ServerSock.recv(512)
+                print(answer.decode('UTF-8'))
+                if ((answer.decode('UTF-8') == 'error') or (answer.decode('UTF-8') == '')):
+                    try:
+                        print('sending to ts2')
+                        ts2ServerSock.sendall(request)
+                        answer = ts2ServerSock.recv(512)
+                        print(answer.decode('UTF-8'))
+
+                        if ((answer.decode('UTF-8') == 'error') or (answer.decode('UTF-8') == '')):
+                            answer = ' - Error:HOST NOT FOUND'
+                            answer = request + answer.encode('utf-8')
+                            clientSock.sendall(answer)
+                        else:
+                            clientSock.sendall(answer)
+                            continue
+                    except:
+                        print('both ts1 and ts2 failed')
+                        clientSock.sendall(answer)
+                        continue
+                else:
+                    clientSock.sendall(answer)
+            except:
+                # this is where there was an error connecting to one of the servers
+                answer = ' - Error:HOST NOT FOUND'
+                answer = request + answer.encode('utf-8')
+                clientSock.sendall(answer)
+                continue
 
         # If the request has gone to ts2 in the past, send it there again...
-        elif newmessege%2 != 0:
+        elif newmessege % 2 != 0:
+            try:
+                print('sending to ts2')
+                ts2ServerSock.sendall(request)
+                answer = ts2ServerSock.recv(512)
+                print(answer.decode('UTF-8'))
+                if ((answer.decode('UTF-8') == 'error') or (answer.decode('UTF-8') == '')):
+                    try:
+                        print('sending to ts1')
+                        ts1ServerSock.sendall(request)
+                        answer = ts1ServerSock.recv(512)
+                        print(answer.decode('UTF-8'))
 
-            ts2ServerSock.sendall(request)
-            answer = ts2ServerSock.recv(512)  # might need more depending on size
-            print(answer)
-            if ts2ServerSock.settimeout(5.0):
-                ts1ServerSock.sendall(request)
-                answer = ts1ServerSock.recv(512)  # might need more depending on size
+                        if ((answer.decode('UTF-8') == 'error') or (answer.decode('UTF-8') == '')):
+                            answer = ' - Error:HOST NOT FOUND'
+                            answer = request + answer.encode('utf-8')
+                            clientSock.sendall(answer)
+                        else:
+                            clientSock.sendall(answer)
+                            continue
+                    except:
+                        clientSock.sendall(answer)
+                        print('both ts2 and ts1 failed')
+                        continue
+                else:
+                    clientSock.sendall(answer)
+            except:
+                # this is if there was an error with connecting to one of the servers
+                answer = ' - Error:HOST NOT FOUND'
+                answer = request + answer.encode('utf-8')
                 clientSock.sendall(answer)
+                continue
 
         # If it hasn't gone to either than send it to the one who has had less requests to balance the load
 
