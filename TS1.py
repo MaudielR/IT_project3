@@ -4,6 +4,7 @@ import argparse
 import binascii
 import socket
 from sys import argv
+import time
 import struct
 
 #temp host holder
@@ -78,20 +79,34 @@ def newans(newData):
     #print(newans)
     return holder
 
-
-#first while the client and google is connected
 def send_message(message):
-    #send send answer back to client (if multiple separate by ',') if none send 'OTHER'
+     #send send answer back to client (if multiple separate by ',') if none send 'OTHER'
     newSock.sendall(message.encode('utf-8'))
     pass
 
+#https://www.geeksforgeeks.org/implementation-of-hashing-with-chaining-in-python/
+def table_check(Name):
+    Name =Name.lower()
+    if Name in ts1Table:
+        value = ts1Table[Name]
+        print('value was checked and sent back')
+        send_message((value))
+        server_sock.close()
+    else:
+        pass
 
+ts1Table = {}
+
+#first while the client and google is connected
 while True:
+
     #retrieve the message (host name) from client
     client_message = newSock.recv(256).decode('utf-8')
     if(len(client_message) == 0):
         break
 
+    Name =client_message
+    table_check(Name)
     dnsMessage = message_generator(client_message)
 
     #from https://routley.io/posts/hand-writing-dns-messages/
@@ -120,9 +135,10 @@ while True:
         send_message(message)
     else:
         message = newans(respond)
+        print('SENT')
+        ts1Table[str(Name)]= str(message)
         send_message((message))
 
 #disconnect from client and google DNS
 server_sock.close()
 exit()
-
