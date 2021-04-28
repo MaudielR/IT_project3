@@ -4,6 +4,7 @@ import argparse
 import binascii
 import socket
 from sys import argv
+import time
 import struct
 
 #temp host holder
@@ -78,35 +79,53 @@ def newans(newData):
     #print(newans)
     return holder
 
-
-#first while the client and google is connected
 def send_message(message):
-    #send send answer back to client (if multiple separate by ',') if none send 'OTHER'
+     #send send answer back to client (if multiple separate by ',') if none send 'OTHER'
     newSock.sendall(message.encode('utf-8'))
     pass
 
+#https://www.geeksforgeeks.org/implementation-of-hashing-with-chaining-in-python/
+def table_check(Name):
+    Name =Name.lower()
+    if Name in ts1Table:
+        value = ts1Table[Name]
+        print('value was checked and sent back')
+        send_message((value))
+        server_sock.close()
+    else:
+        pass
 
+ts1Table = {}
+
+#first while the client and google is connected
 while True:
+    google_sock.settimeout(5)
     #retrieve the message (host name) from client
     client_message = newSock.recv(256).decode('utf-8')
     if(len(client_message) == 0):
         break
-
+    print('new message')
+    Name =client_message
+    table_check(Name)
     dnsMessage = message_generator(client_message)
+    print('dns message',dnsMessage)
+    try:
+        #from https://routley.io/posts/hand-writing-dns-messages/
+        google_sock.sendto(binascii.unhexlify(dnsMessage), google_addr)
 
-    #from https://routley.io/posts/hand-writing-dns-messages/
-    google_sock.sendto(binascii.unhexlify(dnsMessage), google_addr)
-
-    #then retrieve the answer from google DNS server and decode
-    #from https://routley.io/posts/hand-writing-dns-messages/
-    udpOnlineData, addr = google_sock.recvfrom(4096)
-
+        #then retrieve the answer from google DNS server and decode
+        #from https://routley.io/posts/hand-writing-dns-messages/
+        udpOnlineData, addr = google_sock.recvfrom(4096)
+    except socket.error as err:
+        print(err)
+        send_message('error')
+        continue
+    
     respond = binascii.hexlify(udpOnlineData).decode('utf-8')
-    print('responce',respond)
 
     length = len(dnsMessage)
     respond=respond[length:]
-    print('responce',respond)
+    print('response',respond)
     #check the type of response we are receiving
     ipv4_size=respond[4:8]
     if ipv4_size != '0001':
@@ -117,9 +136,12 @@ while True:
         message = respond[message_length:]
         message =newans(message)
         message = ' other,' + message
+        print('sent back')
         send_message(message)
     else:
         message = newans(respond)
+        ts1Table[str(Name)]= str(message)
+        print('sent back')
         send_message((message))
 
 #disconnect from client and google DNS
