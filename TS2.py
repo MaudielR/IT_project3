@@ -1,12 +1,8 @@
-# must change this to cloudflare (1.1.1.1)
-# double check if clouflare port is 80
 import argparse
 import binascii
 import socket
 from sys import argv
 import struct
-import time
-
 # temp host holder
 Host = ''
 # get the port from aguments given
@@ -23,7 +19,7 @@ except socket.error as err:
     exit()
 
 # connect to cloudflare DNS server
-cloudflare_addr = ('1.1.1.1', 80)
+cloudflare_addr = ('1.1.1.1', 53)
 cloudflare_sock.connect(cloudflare_addr)
 
 # try and create socket to connect to client
@@ -37,21 +33,18 @@ server_sock.bind(('', port))
 server_sock.listen(1)
 newSock, serverAddress = server_sock.accept()
 
-# decode the message and then send as UDP packet to google DNS server
+# decode the message and then send as UDP packet to google DNS server// not 10 helxilafy
 def message_generator(url):
     split_url = url.split('.')
     answer = ""
-
     for section in split_url:
-        answer_len = len(section)
-        if len(section) < 10:
-            answer_len = '0' + str(len(section))
-        answer = answer + answer_len + ""
+        temp2 =binascii.hexlify(len(section).to_bytes(1,'big'))
+        temp2 = temp2.decode('utf-8')
+        answer = answer + temp2 + ""
         for character in section:
             hexcode = format(ord(character), "x")
             hexcode = hexcode.upper()
             answer = answer + hexcode + ""
-
     answer = answer + "0000010001"
     message = "AAAA01000001000000000000" + answer
     return message
@@ -88,7 +81,6 @@ while True:
     cloudflare_sock.settimeout(5)
     # retrieve the message (host name) from client
     client_message = newSock.recv(256).decode('utf-8')
-    print(client_message)
     if (len(client_message) == 0):
         break
     Name = client_message.lower()
@@ -105,10 +97,9 @@ while True:
         # from https://routley.io/posts/hand-writing-dns-messages/
         udpOnlineData, addr = cloudflare_sock.recvfrom(4096)
     except socket.error as err:
-        print(err)
         send_message('error')
         continue
-
+    respond = binascii.hexlify(udpOnlineData).decode('utf-8')
     length = len(dnsMessage)
     respond = respond[length:]
     # check the type of response we are receiving
