@@ -15,7 +15,6 @@ args = parser.parse_args(argv[1:])
 #next we create a client socket
 try:
     client_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    print("[C]: Client socket created")
 except socket.error as err:
     print('socket open error: {} \n'.format(err))
     exit()
@@ -38,4 +37,3 @@ with open(args.out_file, 'w') as write_file:
 
 #close the socket (note this will be visible to the other side)
 client_sock.close()
-
