@@ -1,32 +1,3 @@
-# need to change this PROJECT1 RS to Load-Balancing Server
-# DOES NOT store mappings from hostnames to IP addresses
-# 1st
-
-# must add these python ls.py lsListenPort ts1Hostname ts1ListenPort ts2Hostname ts2ListenPort
-# then make sure that Client recieves messages from here
-# then make sure connection between here, client, ts1 and ts2 is stable
-# 2nd
-
-# Use hash table to store and divide queries evenly
-# 3rd
-# make sure that if one of the servers crashes (or is closed)
-# in the middle, the LS server continues to answer queries using only the
-# other server.
-import socket
-import sys
-# need to change this PROJECT1 RS to Load-Balancing Server
-# 1st
-
-
-# then make sure that Client recieves messages from here
-# then make sure connection between here, client, ts1 and ts2 is stable
-# 2nd
-
-# Use hash table to store and divide queries evenly
-# 3rd
-# make sure that if one of the servers crashes (or is closed)
-# in the middle, the LS server continues to answer queries using only the
-# other server.
 import socket
 import sys
 import argparse
@@ -57,17 +28,13 @@ clientSock, serverAddress = lsServerSock.accept()
 ts1ServerSock.connect((args.ts1HostName, args.ts1ListenPort))
 ts2ServerSock.connect((args.ts2HostName, args.ts2ListenPort))
 
-# arrays to hold the previous requests to be able to send it to the same place every time.
-ts1Table = []
-ts2Table = []
-
 # while the server is listening it checks then decodes messages
 while True:
     # Get host name from client
     request = clientSock.recv(512)
     clientRequestedName = request.decode('utf-8').lower()
-    # TA Abraham lecture
 
+    # TA Abraham lecture, showed us how to use hashlib.sha224
     newmessege = hashlib.sha224(clientRequestedName.encode('utf-8')).digest()[0]
     # if client stops sending then stop trying to send anything
     if not request:
@@ -79,16 +46,13 @@ while True:
         # If the request has gone to ts1 in the past, send it there again...
         if newmessege % 2 == 0:
             try:
-                print('sending to ts1')
                 ts1ServerSock.sendall(request)
                 answer = ts1ServerSock.recv(512)
-                print(answer.decode('UTF-8'))
                 if ((answer.decode('UTF-8') == 'error') or (answer.decode('UTF-8') == '')):
                     try:
-                        print('sending to ts2')
+
                         ts2ServerSock.sendall(request)
                         answer = ts2ServerSock.recv(512)
-                        print(answer.decode('UTF-8'))
 
                         if ((answer.decode('UTF-8') == 'error') or (answer.decode('UTF-8') == '')):
                             answer = ' - Error:HOST NOT FOUND'
@@ -98,7 +62,8 @@ while True:
                             clientSock.sendall(answer)
                             continue
                     except:
-                        print('both ts1 and ts2 failed')
+                        answer = ' - Error:HOST NOT FOUND'
+                        answer = request + answer.encode('utf-8')
                         clientSock.sendall(answer)
                         continue
                 else:
@@ -113,17 +78,12 @@ while True:
         # If the request has gone to ts2 in the past, send it there again...
         elif newmessege % 2 != 0:
             try:
-                print('sending to ts2')
                 ts2ServerSock.sendall(request)
                 answer = ts2ServerSock.recv(512)
-                print(answer.decode('UTF-8'))
                 if ((answer.decode('UTF-8') == 'error') or (answer.decode('UTF-8') == '')):
                     try:
-                        print('sending to ts1')
                         ts1ServerSock.sendall(request)
                         answer = ts1ServerSock.recv(512)
-                        print(answer.decode('UTF-8'))
-
                         if ((answer.decode('UTF-8') == 'error') or (answer.decode('UTF-8') == '')):
                             answer = ' - Error:HOST NOT FOUND'
                             answer = request + answer.encode('utf-8')
@@ -132,8 +92,9 @@ while True:
                             clientSock.sendall(answer)
                             continue
                     except:
+                        answer = ' - Error:HOST NOT FOUND'
+                        answer = request + answer.encode('utf-8')
                         clientSock.sendall(answer)
-                        print('both ts2 and ts1 failed')
                         continue
                 else:
                     clientSock.sendall(answer)
@@ -143,22 +104,6 @@ while True:
                 answer = request + answer.encode('utf-8')
                 clientSock.sendall(answer)
                 continue
-
-        # If it hasn't gone to either than send it to the one who has had less requests to balance the load
-
-        # send to ts1 if that has had less...
-        # elif ts1Table.len < ts2Table.len:
-        #     ts1Table.append(clientRequestedName)
-        #     ts1ServerSock.sendall(clientRequestedName.edncode('utf-8'))
-        #     answer = ts1ServerSock.recv(512)  # might need more depending on size
-        #     clientSock.sendall(answer)
-        #
-        # # send to ts2 if that has had less or equal amount of requests....
-        # else:
-        #     ts2Table.append(clientRequestedName)
-        #     ts2ServerSock.sendall(clientRequestedName.edncode('utf-8'))
-        #     answer = ts2ServerSock.recv(512)  # might need more depending on size
-        #     clientSock.sendall(answer)
 
 # close sockets
 clientSock.close()
