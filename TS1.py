@@ -1,5 +1,3 @@
-# google 8.8.8.8 server
-# MUST check local table first
 import argparse
 import binascii
 import socket
@@ -38,21 +36,18 @@ server_sock.listen(1)
 newSock, serverAddress = server_sock.accept()
 
 
-# decode the message and then send as UDP packet to google DNS server
+# decode the message and then send as UDP packet to google DNS server// not 10 helxilafy
 def message_generator(url):
     split_url = url.split('.')
     answer = ""
-
     for section in split_url:
-        answer_len = len(section)
-        if len(section) < 10:
-            answer_len = '0' + str(len(section))
-        answer = answer + answer_len + ""
+        temp2 =binascii.hexlify(len(section).to_bytes(1,'big'))
+        temp2 = temp2.decode('utf-8')
+        answer = answer + temp2 + ""
         for character in section:
             hexcode = format(ord(character), "x")
             hexcode = hexcode.upper()
             answer = answer + hexcode + ""
-
     answer = answer + "0000010001"
     message = "AAAA01000001000000000000" + answer
     return message
@@ -74,12 +69,10 @@ def newans(newData):
         newans = ans[:-1]
         holder = holder + ' ' + newans + ' ' + ','
     holder = holder[:-1]
-    # print(newans)
     return holder
 
 def send_message(message):
     # send send answer back to client (if multiple separate by ',') if none send 'OTHER'
-    print(message)
     newSock.sendall(message.encode('utf-8'))
     pass
 
@@ -107,7 +100,6 @@ while True:
         # from https://routley.io/posts/hand-writing-dns-messages/
         udpOnlineData, addr = google_sock.recvfrom(4096)
     except socket.error as err:
-        print(err)
         send_message('error')
         continue
 
@@ -128,7 +120,6 @@ while True:
             error = 'error'
             send_message(error)
         else:
-            print(message,'sent back')
             send_message(message)
     else:
         message = newans(respond)
